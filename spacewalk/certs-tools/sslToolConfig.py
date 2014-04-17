@@ -80,15 +80,19 @@ def setOption(options, opt, value):
         options.__dict__[opt] = value
 
 
-def getStartDate_aWeekAgo():
-    """ for SSL cert/key generation, returns now, minus 1 week
+def getStartDate(now=False):
+    """ for SSL cert/key generation, returns now (if True), otherwise minus 1 week
         just in case weird time zone issues get in the way of a working
         cert/key.
 
         format: YYMMDDHHMMSSZ where Z is the capital letter Z
     """
-    aweek = 24*60*60*7
-    return time.strftime("%y%m%d%H%M%S", time.gmtime(time.time()-aweek)) + 'Z'
+    if now:
+        mytime = time.localtime(time.time())
+    else:
+        aweek = 24*60*60*7
+        mytime = time.gmtime(time.time()-aweek)
+    return time.strftime("%y%m%d%H%M%S", mytime) + 'Z'
 
 
 _defs = \
@@ -97,7 +101,8 @@ _defs = \
         '--ca-key'          : 'RHN-ORG-PRIVATE-SSL-KEY',
         '--ca-cert'         : 'RHN-ORG-TRUSTED-SSL-CERT',
         '--cert-expiration' : int(daysTil18Jan2038()),
-        '--startdate'       : getStartDate_aWeekAgo(),
+        '--startdate'       : getStartDate(),
+        '--now'             : False,
 
         '--server-key'      : 'server.key',
         '--server-cert-req' : 'server.csr',
@@ -243,6 +248,10 @@ def figureDEFS_server(options):
 
     DEFS['--rpm-packager'] = getOption(options, 'rpm_packager')
     DEFS['--rpm-vendor'] = getOption(options, 'rpm_vendor')
+
+    if getOption(options, 'now') is not None:
+        DEFS['--now'] = True
+        DEFS['--startdate'] = getStartDate(now=True)
 
     if DEFS.has_key('--cert-expiration'):
         # nothing under 1 day or over # days til 18Jan2038
